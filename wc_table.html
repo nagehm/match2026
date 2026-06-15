@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta charset="UTF-8">
+  <title>جدول مجموعات كأس العالم 2026</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: 'Cairo', Arial, sans-serif;
+      background: #176418;
+      color: white;
+      min-height: 100vh;
+      padding: 10px;
+      font-size: 13px;
+    }
+    .header { text-align: center; padding: 12px 0 16px; }
+    .header-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: linear-gradient(135deg, rgba(139,105,20,0.4), rgba(255,215,0,0.2));
+      border: 1px solid rgba(255,215,0,0.4); border-radius: 30px;
+      padding: 8px 18px; font-size: 15px; font-weight: 700; color: #FFD700;
+    }
+    .groups-nav {
+      display: flex; flex-wrap: nowrap; gap: 6px; margin-bottom: 14px;
+      justify-content: flex-start; overflow-x: auto; padding-bottom: 8px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .groups-nav::-webkit-scrollbar { height: 4px; }
+    .groups-nav::-webkit-scrollbar-thumb { background: rgba(255,215,0,0.3); border-radius: 4px; }
+    .group-btn {
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,215,0,0.3);
+      color: white; border-radius: 10px; padding: 8px 16px; font-size: 12px;
+      font-family: 'Cairo', sans-serif; font-weight: 700; cursor: pointer;
+      transition: all 0.2s; white-space: nowrap; flex-shrink: 0;
+    }
+    .group-btn.active {
+      background: linear-gradient(135deg, #FFD700, #FFA500); color: #0a2416;
+      border-color: #FFD700; box-shadow: 0 4px 10px rgba(255,215,0,0.2);
+    }
+    .group-section {
+      background: rgba(255,255,255,0.05); border-radius: 16px; padding: 12px;
+      margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.1); display: block;
+    }
+    .group-title { font-size: 14px; font-weight: 700; color: #FFD700; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,215,0,0.2); }
+    .table-wrapper { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    thead tr { border-bottom: 1px solid rgba(255,215,0,0.3); }
+    thead th { padding: 8px 4px; color: rgba(255,255,255,0.7); font-weight: 700; text-align: center; white-space: nowrap; }
+    thead th.team-header { text-align: right; }
+    tbody tr { border-bottom: 1px solid rgba(255,255,255,0.06); }
+    tbody tr:last-child { border-bottom: none; }
+    tbody td { padding: 10px 4px; text-align: center; white-space: nowrap; }
+    .pos { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; font-size: 11px; font-weight: 700; }
+    .pos-qualify { background: #00ca9b; color: #0a2416; }
+    .pos-normal  { background: rgba(255,255,255,0.15); color: white; }
+    .team-cell { text-align: right !important; display: flex; align-items: center; gap: 8px; min-width: 130px; }
+    .team-logo { width: 22px; height: 22px; object-fit: contain; background: white; border-radius: 50%; padding: 2px; flex-shrink: 0; }
+    .team-name { font-weight: 700; font-size: 12px; }
+    .pts { font-weight: 900; color: #FFD700; font-size: 13px; }
+    .gd.positive { color: #00ca9b; font-weight: bold; }
+    .gd.negative { color: #f67047; font-weight: bold; }
+    .form-cell { min-width: 80px; }
+    .form-item { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 3px; font-size: 10px; font-weight: 700; margin: 1px; }
+    .form-item.win  { background: #00ca9b; color: #0a2416; }
+    .form-item.lose { background: #f67047; color: white; }
+    .form-item.draw { background: rgba(255,255,255,0.3); color: white; }
+    .legend { display: flex; gap: 12px; margin-top: 15px; font-size: 11px; color: rgba(255,255,255,0.6); justify-content: center; }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .loading { text-align: center; padding: 40px; font-size: 16px; color: #FFD700; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="header-badge">🏆 مجموعات كأس العالم 2026</div>
+  </div>
+
+  <div id="main-content" style="display: none;">
+    <div class="groups-nav" id="nav-container">
+      <button class="group-btn active" onclick="showAll(event)">الكل</button>
+    </div>
+    <div id="tables-container"></div>
+  </div>
+
+  <div id="loading-view" class="loading">⏳ جاري تحميل المجموعات وترجمة المنتخبات...</div>
+
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#00ca9b"></div>
+      <span>تأهل للدور الثاني (أول وثاني المجموعات)</span>
+    </div>
+  </div>
+
+  <script>
+    const ARABIC_TEAMS = {
+      "Mexico": "المكسيك", "South Korea": "كوريا الجنوبية", "Czechia": "التشيك", "South Africa": "جنوب أفريقيا",
+      "Switzerland": "سويسرا", "Canada": "كندا", "Qatar": "قطر", "Bosnia-Herzegovina": "البوسنة والهرسك",
+      "Scotland": "اسكتلندا", "USA": "أمريكا", "United States": "أمريكا", "Argentina": "الأرجنتين", "Brazil": "البرازيل",
+      "France": "فرنسا", "Germany": "ألمانيا", "Spain": "إسبانيا", "Italy": "إيطاليا", "England": "إنجلترا",
+      "Egypt": "مصر", "Morocco": "المغرب", "Tunisia": "تونس", "Saudi Arabia": "السعودية", "Japan": "اليابان",
+      "Australia": "أستراليا", "Croatia": "كرواتيا", "Portugal": "البرتغال", "Netherlands": "هولندا", "Belgium": "بلجيكا",
+      "Uruguay": "أوروغواي", "Colombia": "كولومبيا", "Senegal": "السنغال", "Ghana": "غانا", "Cameroon": "الكاميرون"
+    };
+
+    fetch("https://api.football-data.org/v4/competitions/WC/standings", {
+      headers: { "X-Auth-Token": "258bfde7b82f46e7be5db4a3ebce2386" }
+    })
+    .then(res => res.json())
+    .then(data => {
+      const standings = data.standings || [];
+      if(standings.length === 0) return;
+
+      document.getElementById("loading-view").style.display = "none";
+      document.getElementById("main-content").style.display = "block";
+
+      let navHtml = '<button class="group-btn active" onclick="showAll(event)">الكل</button>';
+      let tablesHtml = '';
+
+      standings.forEach(s => {
+        const id = s.group || s.stage;
+        let groupName = s.group ? s.group.replace("GROUP_", "المجموعة ") : s.stage;
+        groupName = groupName.replace("Group ", "المجموعة ");
+
+        navHtml += `<button class="group-btn" onclick="showGroup('${id}', event)">${groupName}</button>`;
+
+        let rowsHtml = '';
+        (s.table || []).forEach((t, i) => {
+          const pos = t.position || i + 1;
+          const team = ARABIC_TEAMS[t.team?.name] || t.team?.name || "فريق";
+          const logo = t.team?.crest || "";
+          const form = (t.form || "").split(",").filter(Boolean);
+
+          let formHtml = '';
+          form.forEach(f => {
+            const cls = f === "W" ? "win" : f === "L" ? "lose" : "draw";
+            const txt = f === "W" ? "ف" : f === "L" ? "خ" : "ت";
+            formHtml += `<span class="form-item ${cls}">${txt}</span>`;
+          });
+
+          rowsHtml += `
+            <tr>
+              <td><span class="pos ${pos <= 2 ? 'pos-qualify' : 'pos-normal'}">${pos}</span></td>
+              <td class="team-cell">
+                ${logo ? `<img src="${logo}" class="team-logo" onerror="this.style.display='none'">` : ""}
+                <span class="team-name">${team}</span>
+              </td>
+              <td>${t.playedGames ?? 0}</td>
+              <td>${t.won ?? 0}</td>
+              <td>${t.draw ?? 0}</td>
+              <td>${t.lost ?? 0}</td>
+              <td>${t.goalsFor ?? 0}:${t.goalsAgainst ?? 0}</td>
+              <td class="gd ${t.goalDifference > 0 ? 'positive' : t.goalDifference < 0 ? 'negative' : ''}">${t.goalDifference > 0 ? '+' : ''}${t.goalDifference ?? 0}</td>
+              <td class="pts">${t.points ?? 0}</td>
+              <td class="form-cell">${formHtml}</td>
+            </tr>`;
+        });
+
+        tablesHtml += `
+          <div class="group-section" id="group-${id}">
+            <div class="group-title">🏆 ${groupName}</div>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th><th class="team-header">الفريق</th><th>ل</th><th>ف</th><th>ت</th><th>خ</th><th>أه</th><th>فر</th><th>ن</th><th>شكل</th>
+                  </tr>
+                </thead>
+                <tbody>${rowsHtml}</tbody>
+              </table>
+            </div>
+          </div>`;
+      });
+
+      document.getElementById("nav-container").innerHTML = navHtml;
+      document.getElementById("tables-container").innerHTML = tablesHtml;
+    });
+
+    function showAll(evt) {
+      document.querySelectorAll('.group-section').forEach(el => el.style.display = 'block');
+      document.querySelectorAll('.group-btn').forEach(btn => btn.classList.remove('active'));
+      evt.target.classList.add('active');
+    }
+
+    function showGroup(id, evt) {
+      document.querySelectorAll('.group-section').forEach(el => el.style.display = 'none');
+      document.getElementById('group-' + id).style.display = 'block';
+      document.querySelectorAll('.group-btn').forEach(btn => btn.classList.remove('active'));
+      evt.target.classList.add('active');
+    }
+  </script>
+</body>
+</html>
