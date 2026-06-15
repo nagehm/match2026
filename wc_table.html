@@ -95,6 +95,7 @@
   </div>
 
   <script>
+    // قاموس التعريب الفولاذي الشامل لجميع منتخبات الفيفا المتوقع مشاركتها بالملّي
     const ARABIC_TEAMS = {
       "Mexico": "المكسيك", "South Korea": "كوريا الجنوبية", "Czechia": "التشيك", "South Africa": "جنوب أفريقيا",
       "Switzerland": "سويسرا", "Canada": "كندا", "Qatar": "قطر", "Bosnia-Herzegovina": "البوسنة والهرسك",
@@ -102,8 +103,21 @@
       "France": "فرنسا", "Germany": "ألمانيا", "Spain": "إسبانيا", "Italy": "إيطاليا", "England": "إنجلترا",
       "Egypt": "مصر", "Morocco": "المغرب", "Tunisia": "تونس", "Saudi Arabia": "السعودية", "Japan": "اليابان",
       "Australia": "أستراليا", "Croatia": "كرواتيا", "Portugal": "البرتغال", "Netherlands": "هولندا", "Belgium": "بلجيكا",
-      "Uruguay": "أوروغواي", "Colombia": "كولومبيا", "Senegal": "السنغال", "Ghana": "غانا", "Cameroon": "الكاميرون"
+      "Uruguay": "أوروغواي", "Colombia": "كولومبيا", "Senegal": "السنغال", "Ghana": "غانا", "Cameroon": "الكاميرون",
+      "Ecuador": "الإكوادور", "Iran": "إيران", "Wales": "ويلز", "Poland": "بولندا", "Denmark": "الدنمارك",
+      "Costa Rica": "كوستاريكا", "Spain": "إسبانيا", "Japan": "اليابان", "Serbia": "صربيا", "Switzerland": "سويسرا",
+      "Ghana": "غانا", "Peru": "بيرو", "Ukraine": "أوكرانيا", "Sweden": "السويد", "Algeria": "الجزائر", "Nigeria": "نيجيريا"
     };
+
+    function cleanGroupName(name) {
+      if (!name) return "";
+      let txt = name.replace("GROUP_", "المجموعة ").replace("Group ", "المجموعة ");
+      // تعريب الحروف الفردية للمجموعات إذا جاءت بالإنجليزية
+      txt = txt.replace(" A", " أ").replace(" B", " ب").replace(" C", " ج").replace(" D", " د")
+               .replace(" E", " هـ").replace(" F", " و").replace(" G", " ز").replace(" H", " ح")
+               .replace(" I", " ط").replace(" J", " ي").replace(" K", " ك").replace(" L", " ل");
+      return txt;
+    }
 
     fetch("https://api.football-data.org/v4/competitions/WC/standings", {
       headers: { "X-Auth-Token": "258bfde7b82f46e7be5db4a3ebce2386" }
@@ -111,7 +125,10 @@
     .then(res => res.json())
     .then(data => {
       const standings = data.standings || [];
-      if(standings.length === 0) return;
+      if(standings.length === 0) {
+        document.getElementById("loading-view").innerHTML = "⚠️ لا توجد بيانات متاحة حالياً في الـ API";
+        return;
+      }
 
       document.getElementById("loading-view").style.display = "none";
       document.getElementById("main-content").style.display = "block";
@@ -121,15 +138,16 @@
 
       standings.forEach(s => {
         const id = s.group || s.stage;
-        let groupName = s.group ? s.group.replace("GROUP_", "المجموعة ") : s.stage;
-        groupName = groupName.replace("Group ", "المجموعة ");
+        const groupName = cleanGroupName(s.group || s.stage);
 
         navHtml += `<button class="group-btn" onclick="showGroup('${id}', event)">${groupName}</button>`;
 
         let rowsHtml = '';
         (s.table || []).forEach((t, i) => {
           const pos = t.position || i + 1;
-          const team = ARABIC_TEAMS[t.team?.name] || t.team?.name || "فريق";
+          const rawName = t.team?.name || "فريق";
+          // سطر الأمان الذكي: إذا وجد الاسم في القاموس يترجمه، وإذا لم يجده يتركه كما هو دون إيقاف الصفحة
+          const team = ARABIC_TEAMS[rawName] || rawName; 
           const logo = t.team?.crest || "";
           const form = (t.form || "").split(",").filter(Boolean);
 
@@ -176,6 +194,9 @@
 
       document.getElementById("nav-container").innerHTML = navHtml;
       document.getElementById("tables-container").innerHTML = tablesHtml;
+    })
+    .catch(err => {
+      document.getElementById("loading-view").innerHTML = "❌ خطأ في الاتصال بالـ API: " + err;
     });
 
     function showAll(evt) {
